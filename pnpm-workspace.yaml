@@ -5,11 +5,13 @@ packages:
   - examples/**
   - demo/*
 catalogs:
-  react18:
-    '@types/react': ^19.1.0
-    '@types/react-dom': ^19.1.0
-    react: 19.1.0
-    react-dom: 19.1.0
+  nextjs:
+    next: 15.4.5
+  react:
+    '@types/react': ^19.1.9
+    '@types/react-dom': ^19.1.7
+    react: 19.1.1
+    react-dom: 19.1.1
 catalog:
   "better-call": "^1.0.12"
   "@better-fetch/fetch": "^1.1.18"
