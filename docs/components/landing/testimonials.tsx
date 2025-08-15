@@ -265,6 +265,7 @@ export const Testimonial = () => {
 					className="relative flex justify-around gap-5 overflow-hidden shrink-0"
 				>
 <<<<<<<< HEAD:docs/components/landing/testimonials.tsx
+<<<<<<<< HEAD:docs/components/landing/testimonials.tsx
 					<Suspense
 						fallback={
 							<TestimonialItem
@@ -291,6 +292,8 @@ export const Testimonial = () => {
 						/>
 					</Suspense>
 ========
+========
+>>>>>>>> ef481d8dc (chore: fix broken testomnial link):docs/components/landing/testimonal.tsx
 					<TestimonialItem
 						reverse
 						testimonials={Array(15)
@@ -306,6 +309,7 @@ export const Testimonial = () => {
 					}}
 					className="relative flex justify-around gap-5 overflow-hidden shrink-0"
 				>
+<<<<<<<< HEAD:docs/components/landing/testimonials.tsx
 <<<<<<<< HEAD:docs/components/landing/testimonials.tsx
 					<Suspense
 						fallback={
@@ -335,6 +339,8 @@ export const Testimonial = () => {
 						/>
 					</Suspense>
 ========
+========
+>>>>>>>> ef481d8dc (chore: fix broken testomnial link):docs/components/landing/testimonal.tsx
 					<TestimonialItem
 						testimonials={Array(15)
 							.fill(
