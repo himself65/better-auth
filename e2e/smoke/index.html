@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>E2E Playground</title>
+</head>
+<body>
+<div id="root"></div>
+</body>
+<script type="module">
+  import { createAuthClient } from 'better-auth/react'
+
+  const baseURL = window.BASE_URL || 'http://localhost:3000'
+  const authClient = createAuthClient({
+    baseURL
+  })
+  window.authClient = authClient
+</script>
+</html>
