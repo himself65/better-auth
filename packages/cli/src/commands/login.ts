@@ -5,7 +5,7 @@ import { deviceAuthorizationClient } from "better-auth/client/plugins";
 import chalk from "chalk";
 import open from "open";
 import yoctoSpinner from "yocto-spinner";
-import * as z from "zod/v4";
+import defer * as z from "zod/v4";
 import { intro, outro, confirm, isCancel, cancel } from "@clack/prompts";
 import fs from "fs/promises";
 import path from "path";
