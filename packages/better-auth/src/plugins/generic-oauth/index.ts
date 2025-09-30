@@ -589,17 +589,18 @@ export const genericOAuth = (options: GenericOAuthOptions) => {
 					}
 					let tokens: OAuth2Tokens | undefined = undefined;
 
-					const parsedState =
-						!provider.stateOptional || ctx.query.state || ctx.body?.state
-							? await parseState(ctx)
-							: {
-									link: undefined,
-									callbackURL: ctx.context.baseURL,
-									codeVerifier: undefined,
-									errorURL: undefined,
-									newUserURL: undefined,
-									requestSignUp: false,
-								};
+					const shouldParseState =
+						!provider.stateOptional || ctx.query.state || ctx.body?.state;
+					const parsedState = shouldParseState
+						? await parseState(ctx)
+						: {
+								link: undefined,
+								callbackURL: ctx.context.baseURL,
+								codeVerifier: undefined,
+								errorURL: undefined,
+								newUserURL: undefined,
+								requestSignUp: false,
+							};
 
 					const {
 						callbackURL,

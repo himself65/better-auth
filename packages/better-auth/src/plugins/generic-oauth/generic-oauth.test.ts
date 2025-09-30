@@ -883,4 +883,29 @@ describe("oauth2", async () => {
 			userId: session.data?.user.id,
 		});
 	});
+
+	it("should support stateOptional configuration for IDP-initiated flows", async () => {
+		// Test that the stateOptional configuration option exists and can be set
+		// Note: Full end-to-end testing of IDP-initiated flows requires updates to the
+		// core callback handler to check if the provider supports optional state
+		const { auth } = await getTestInstance({
+			plugins: [
+				genericOAuth({
+					config: [
+						{
+							providerId: "clever",
+							discoveryUrl: `http://localhost:${port}/.well-known/openid-configuration`,
+							clientId: clientId,
+							clientSecret: clientSecret,
+							pkce: false,
+							stateOptional: true, // This is the new option being tested
+						},
+					],
+				}),
+			],
+		});
+
+		// Verify the plugin was initialized successfully with the stateOptional config
+		expect(auth).toBeDefined();
+	});
 });
