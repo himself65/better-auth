@@ -705,6 +705,7 @@
     }
   },
   "dependencies": {
+    "@better-auth/additional-fields-plugin": "workspace:*",
     "@better-auth/core": "workspace:*",
     "@better-auth/telemetry": "workspace:*",
     "@better-auth/utils": "0.3.0",

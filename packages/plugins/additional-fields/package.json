@@ -1,0 +1,51 @@
+{
+  "name": "@better-auth/additional-fields-plugin",
+  "version": "1.4.0-beta.8",
+  "description": "Additional Fields plugin package for Better Auth",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./client": {
+      "import": {
+        "types": "./dist/client.d.ts",
+        "default": "./dist/client.mjs"
+      },
+      "require": {
+        "types": "./dist/client.d.cts",
+        "default": "./dist/client.cjs"
+      }
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "index": [
+        "dist/index.d.ts"
+      ]
+    }
+  },
+  "scripts": {
+    "build": "unbuild --clean",
+    "stub": "unbuild --stub",
+    "typecheck": "tsc --project tsconfig.json"
+  },
+  "devDependencies": {
+    "unbuild": "catalog:",
+    "type-fest": "^4.31.0"
+  },
+  "dependencies": {
+    "@better-auth/core": "workspace:*",
+    "@better-auth/utils": "0.3.0",
+    "@better-fetch/fetch": "catalog:"
+  }
+}
