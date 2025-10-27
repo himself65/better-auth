@@ -14,6 +14,8 @@ import type {
 import type { BetterAuthOptions } from "@better-auth/core";
 import type { Prettify } from "../../types/helper";
 
+export * from "@better-auth/core/db/adapter";
+
 export type AdapterFactoryOptions = {
 	config: AdapterFactoryConfig;
 	adapter: AdapterFactoryCustomizeAdapterCreator;
