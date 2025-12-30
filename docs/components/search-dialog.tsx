@@ -1,64 +1,63 @@
 "use client";
 
-import { OramaClient } from "@oramacloud/client";
-import { useDocsSearch } from "fumadocs-core/search/client";
-import type { SharedProps } from "fumadocs-ui/components/dialog/search";
 import {
 	SearchDialog,
-	SearchDialogClose,
 	SearchDialogContent,
-	SearchDialogFooter,
 	SearchDialogHeader,
-	SearchDialogIcon,
 	SearchDialogInput,
 	SearchDialogList,
-	SearchDialogOverlay,
 } from "fumadocs-ui/components/dialog/search";
-import { useI18n } from "fumadocs-ui/contexts/i18n";
+import type { SharedProps } from "fumadocs-ui/components/dialog/search";
+import { useState, useCallback } from "react";
+import useSWR from "swr";
+import { useDebounce } from "use-debounce";
 
-const client = new OramaClient({
-	endpoint: process.env.NEXT_PUBLIC_ORAMA_ENDPOINT!,
-	api_key: process.env.NEXT_PUBLIC_ORAMA_PUBLIC_API_KEY!,
-});
+interface SearchResult {
+	title: string;
+	content: string;
+	url: string;
+}
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export function CustomSearchDialog(props: SharedProps) {
-	const { locale } = useI18n();
-	const { search, setSearch, query } = useDocsSearch({
-		type: "orama-cloud",
-		client,
-		locale,
-	});
+	const [search, setSearch] = useState("");
+	const [debouncedSearch] = useDebounce(search, 500);
+	
+	const { data, isLoading } = useSWR<SearchResult[]>(
+		debouncedSearch ? `/api/search?query=${encodeURIComponent(debouncedSearch)}` : null,
+		fetcher
+	);
+
+	const items = data?.map((item) => ({
+		type: "page" as const,
+		id: item.url,
+		title: item.title,
+		content: item.content,
+		url: item.url,
+	})) || [];
 
 	return (
-		<>
-			<SearchDialog
-				search={search}
-				onSearchChange={setSearch}
-				isLoading={query.isLoading}
-				{...props}
-			>
-				<SearchDialogOverlay />
-				<SearchDialogContent className="mt-12 md:mt-0">
-					<SearchDialogHeader>
-						<SearchDialogIcon />
-						<SearchDialogInput />
-
-						<SearchDialogClose className="hidden md:block" />
-					</SearchDialogHeader>
-					<SearchDialogList
-						items={query.data !== "empty" ? query.data : null}
+		<SearchDialog
+			open={props.open}
+			onOpenChange={props.onOpenChange}
+			search={search}
+			onSearchChange={setSearch}
+			isLoading={isLoading}
+		>
+			<SearchDialogContent>
+				<SearchDialogHeader>
+					<SearchDialogInput 
+						placeholder="Search documentation..."
+						value={search}
+						onChange={(e) => setSearch(e.target.value)}
 					/>
-					<SearchDialogFooter>
-						<a
-							href="https://orama.com"
-							rel="noreferrer noopener"
-							className="ms-auto text-xs text-fd-muted-foreground"
-						>
-							Search powered by Orama
-						</a>
-					</SearchDialogFooter>
-				</SearchDialogContent>
-			</SearchDialog>
-		</>
+				</SearchDialogHeader>
+				<SearchDialogList 
+					items={items} 
+					empty={!isLoading && debouncedSearch ? "No results found." : undefined}
+				/>
+			</SearchDialogContent>
+		</SearchDialog>
 	);
 }
