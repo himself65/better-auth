@@ -3,15 +3,17 @@ import type {
 	BetterFetchOption,
 	BetterFetchPlugin,
 } from "@better-fetch/fetch";
-import type { Atom, WritableAtom } from "nanostores";
+import type { Atom, WritableAtom, PrimitiveAtom } from "jotai/vanilla";
 import type { LiteralString } from "./helper";
 import type { BetterAuthOptions } from "./init-options";
 import type { BetterAuthPlugin } from "./plugin";
 
+type AnyAtom = Atom<any> | WritableAtom<any, any, any> | PrimitiveAtom<any>;
+
 export interface ClientStore {
 	notify: (signal: string) => void;
 	listen: (signal: string, listener: () => void) => void;
-	atoms: Record<string, WritableAtom<any>>;
+	atoms: Record<string, AnyAtom>;
 }
 
 export type ClientAtomListener = {
@@ -98,7 +100,7 @@ export interface BetterAuthClientPlugin {
 	 * State atoms that'll be resolved by each framework
 	 * auth store.
 	 */
-	getAtoms?: (($fetch: BetterFetch) => Record<string, Atom<any>>) | undefined;
+	getAtoms?: (($fetch: BetterFetch) => Record<string, AnyAtom>) | undefined;
 	/**
 	 * specify path methods for server plugin inferred
 	 * endpoints to force a specific method.

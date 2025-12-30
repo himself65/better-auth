@@ -8,6 +8,7 @@ import type { InferFieldsInputClient, InferFieldsOutput } from "../db";
 import type { Auth, Session, User } from "../types";
 import type { StripEmptyObjects, UnionToIntersection } from "../types/helper";
 import type { InferRoutes } from "./path-to-object";
+import type { createStore } from 'jotai/vanilla'
 export type {
 	ClientStore,
 	ClientAtomListener,
@@ -15,18 +16,7 @@ export type {
 	BetterAuthClientPlugin,
 };
 
-/**
- * @deprecated use type `ClientStore` instead.
- */
-export type Store = ClientStore;
-/**
- * @deprecated use type `ClientAtomListener` instead.
- */
-export type AtomListener = ClientAtomListener;
-/**
- * @deprecated use type `BetterAuthClientOptions` instead.
- */
-export type ClientOptions = BetterAuthClientOptions;
+export type JotaiStore = ReturnType<typeof createStore>;
 
 export type InferClientAPI<O extends BetterAuthClientOptions> = InferRoutes<
 	O["plugins"] extends Array<any>

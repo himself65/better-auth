@@ -454,8 +454,8 @@
     "better-call": "catalog:",
     "defu": "^6.1.4",
     "jose": "^6.1.0",
+    "jotai": "^2.14.0",
     "kysely": "^0.28.5",
-    "nanostores": "^1.0.1",
     "zod": "^4.1.12"
   },
   "devDependencies": {

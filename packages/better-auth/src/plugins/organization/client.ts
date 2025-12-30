@@ -1,6 +1,6 @@
 import type { BetterAuthClientPlugin } from "@better-auth/core";
 import type { DBFieldAttribute } from "@better-auth/core/db";
-import { atom } from "nanostores";
+import { atom } from "jotai/vanilla";
 import { useAuthQuery } from "../../client";
 import type {
 	InferInvitation,

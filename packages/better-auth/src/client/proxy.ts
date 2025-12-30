@@ -4,9 +4,10 @@ import type {
 	ClientFetchOption,
 } from "@better-auth/core";
 import type { BetterFetch } from "@better-fetch/fetch";
-import type { Atom } from "nanostores";
+import type { createStore, PrimitiveAtom } from "jotai/vanilla";
 import { isAtom } from "../utils/is-atom";
 import type { ProxyRequest } from "./path-to-object";
+import type { JotaiStore } from './types'
 
 function getMethod(
 	path: string,
@@ -36,8 +37,9 @@ export function createDynamicPathProxy<T extends Record<string, any>>(
 	routes: T,
 	client: BetterFetch,
 	knownPathMethods: Record<string, "POST" | "GET">,
-	atoms: Record<string, Atom>,
+	atoms: Record<string, PrimitiveAtom<any>>,
 	atomListeners: BetterAuthClientPlugin["atomListeners"],
+	store: JotaiStore,
 ): T {
 	function createProxy(path: string[] = []): any {
 		return new Proxy(function () {}, {
@@ -113,10 +115,9 @@ export function createDynamicPathProxy<T extends Record<string, any>>(
 							/**
 							 * To avoid race conditions we set the signal in a setTimeout
 							 */
-							const val = signal.get();
+							const val = store.get(signal)
 							setTimeout(() => {
-								//@ts-expect-error
-								signal.set(!val);
+								store.set(signal, !val);
 							}, 10);
 						}
 					},

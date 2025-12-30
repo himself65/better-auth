@@ -1,13 +1,15 @@
 import type { ClientFetchOption } from "@better-auth/core";
 import type { BetterFetch, BetterFetchError } from "@better-fetch/fetch";
-import type { PreinitializedWritableAtom } from "nanostores";
-import { atom, onMount } from "nanostores";
+import type { PrimitiveAtom, Atom, WritableAtom } from "jotai/vanilla";
+import { atom, createStore } from "jotai/vanilla";
 import type { SessionQueryParams } from "./types";
+
+type Store = ReturnType<typeof createStore>;
 
 // SSR detection
 const isServer = () => typeof window === "undefined";
 
-export type AuthQueryAtom<T> = PreinitializedWritableAtom<{
+export type AuthQueryAtom<T> = PrimitiveAtom<{
 	data: null | T;
 	error: null | BetterFetchError;
 	isPending: boolean;
@@ -19,10 +21,11 @@ export type AuthQueryAtom<T> = PreinitializedWritableAtom<{
 
 export const useAuthQuery = <T>(
 	initializedAtom:
-		| PreinitializedWritableAtom<any>
-		| PreinitializedWritableAtom<any>[],
+		| (PrimitiveAtom<any> | Atom<any> | WritableAtom<any, any, any>)
+		| (PrimitiveAtom<any> | Atom<any> | WritableAtom<any, any, any>)[],
 	path: string,
 	$fetch: BetterFetch,
+	store: Store,
 	options?:
 		| (
 				| ((value: {
@@ -34,13 +37,13 @@ export const useAuthQuery = <T>(
 		  )
 		| undefined,
 ) => {
-	const value: AuthQueryAtom<T> = atom({
+	const value = atom({
 		data: null,
 		error: null,
 		isPending: true,
 		isRefetching: false,
 		refetch: (queryParams) => fn(queryParams),
-	});
+	}) as AuthQueryAtom<T> ;
 
 	const fn = async (
 		queryParams?: { query?: SessionQueryParams } | undefined,
@@ -48,11 +51,14 @@ export const useAuthQuery = <T>(
 		return new Promise<void>((resolve) => {
 			const opts =
 				typeof options === "function"
-					? options({
-							data: value.get().data,
-							error: value.get().error,
-							isPending: value.get().isPending,
+					? (() => {
+						const val = store.get(value);
+						return options({
+							data: val.data,
+							error: val.error,
+							isPending: val.isPending,
 						})
+					})()
 					: options;
 
 			$fetch<T>(path, {
@@ -62,13 +68,13 @@ export const useAuthQuery = <T>(
 					...queryParams?.query,
 				},
 				async onSuccess(context) {
-					value.set({
+					store.set(value, val => ({
+						...val,
 						data: context.data,
 						error: null,
 						isPending: false,
 						isRefetching: false,
-						refetch: value.value.refetch,
-					});
+					}));
 					await opts?.onSuccess?.(context);
 				},
 				async onError(context) {
@@ -79,35 +85,34 @@ export const useAuthQuery = <T>(
 							: request.retry?.attempts;
 					const retryAttempt = request.retryAttempt || 0;
 					if (retryAttempts && retryAttempt < retryAttempts) return;
-					value.set({
+					store.set(value, value => ({
+						...value,
 						error: context.error,
 						data: null,
 						isPending: false,
 						isRefetching: false,
-						refetch: value.value.refetch,
-					});
+					}))
 					await opts?.onError?.(context);
 				},
 				async onRequest(context) {
-					const currentValue = value.get();
-					value.set({
-						isPending: currentValue.data === null,
-						data: currentValue.data,
+					store.set(value, value => ({
+						isPending: value.data === null,
+						data: value.data,
 						error: null,
 						isRefetching: true,
-						refetch: value.value.refetch,
-					});
+						refetch: value.refetch,
+					}))
 					await opts?.onRequest?.(context);
 				},
 			})
 				.catch((error) => {
-					value.set({
+					store.set(value, value => ({
 						error,
 						data: null,
 						isPending: false,
 						isRefetching: false,
-						refetch: value.value.refetch,
-					});
+						refetch: value.refetch,
+					}))
 				})
 				.finally(() => {
 					resolve(void 0);
@@ -120,7 +125,7 @@ export const useAuthQuery = <T>(
 	let isMounted = false;
 
 	for (const initAtom of initializedAtom) {
-		initAtom.subscribe(async () => {
+		const unsub = store.sub(initAtom, async () => {
 			if (isServer()) {
 				// On server, don't trigger fetch
 				return;
@@ -128,7 +133,7 @@ export const useAuthQuery = <T>(
 			if (isMounted) {
 				await fn();
 			} else {
-				onMount(value, () => {
+				value.onMount = () => {
 					const timeoutId = setTimeout(async () => {
 						if (!isMounted) {
 							await fn();
@@ -136,13 +141,13 @@ export const useAuthQuery = <T>(
 						}
 					}, 0);
 					return () => {
-						value.off();
-						initAtom.off();
+						value.onMount = undefined;
+						unsub();
 						clearTimeout(timeoutId);
 					};
-				});
+				};
 			}
-		});
+		})
 	}
 	return value;
 };
