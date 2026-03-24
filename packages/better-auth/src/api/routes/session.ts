@@ -541,12 +541,12 @@ export const getSessionFromCtx = async <
 		};
 	}
 
-	const session = await getSession()({
+	const result = await getSession()({
 		...ctx,
 		method: "GET",
 		asResponse: false,
 		headers: ctx.headers!,
-		returnHeaders: false,
+		returnHeaders: true,
 		returnStatus: false,
 		query: {
 			...config,
@@ -555,6 +555,27 @@ export const getSessionFromCtx = async <
 	}).catch((e) => {
 		return null;
 	});
+
+	// Propagate set-cookie headers from the inner getSession call to the outer
+	// response so cookie cache refreshes (e.g. session_data refresh) are not
+	// silently discarded. We store them in ctx.context._cookiesToPropagate
+	// rather than appending directly to ctx.responseHeaders, because
+	// better-call's middleware header merge uses Headers.set() which drops all
+	// but the last set-cookie value. toAuthEndpoints reads this array and
+	// applies it with Headers.append() after the endpoint handler returns.
+	if (result?.headers instanceof Headers) {
+		const setCookies = result.headers.getSetCookie?.() ?? [];
+		if (setCookies.length > 0) {
+			if (!ctx.context._cookiesToPropagate) {
+				ctx.context._cookiesToPropagate = [];
+			}
+			for (const cookie of setCookies) {
+				ctx.context._cookiesToPropagate.push(cookie);
+			}
+		}
+	}
+
+	const session = result && "response" in result ? result.response : result;
 	ctx.context.session = session;
 	return session as {
 		session: S & Session;

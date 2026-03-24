@@ -46,6 +46,7 @@ type InternalContext = Partial<
 		logger: AuthContext["logger"];
 		returned?: unknown | undefined;
 		responseHeaders?: Headers | undefined;
+		_cookiesToPropagate?: string[] | undefined;
 	};
 };
 
@@ -214,6 +215,19 @@ export function toAuthEndpoints<const E extends Record<string, Endpoint>>(
 
 							internalContext.context.returned = result.response;
 							internalContext.context.responseHeaders = result.headers;
+
+							// Apply cookies accumulated by nested getSession calls (e.g. via
+							// getSessionFromCtx inside middleware). better-call's middleware header
+							// merge uses Headers.set() which drops duplicate set-cookie entries, so
+							// we propagate them here via append() instead.
+							const cookiesToPropagate =
+								internalContext.context._cookiesToPropagate;
+							if (cookiesToPropagate) {
+								for (const cookie of cookiesToPropagate) {
+									result.headers.append("set-cookie", cookie);
+								}
+								internalContext.context._cookiesToPropagate = undefined;
+							}
 
 							const after = await runAfterHooks(
 								internalContext,

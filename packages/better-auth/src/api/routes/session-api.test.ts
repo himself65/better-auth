@@ -1944,3 +1944,56 @@ describe("updateSession", async () => {
 		});
 	});
 });
+
+/**
+ * @see https://github.com/better-auth/better-auth/issues/8763
+ */
+describe("getSessionFromCtx cookie cache refresh propagation", async () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it("should propagate refreshed session_data cookie to the outer response when called via sessionMiddleware", async () => {
+		// refreshCache is only active in stateless (DB-less) setups. Passing
+		// database: undefined disables the in-memory adapter so cookieRefreshCache
+		// is actually applied.
+		const { auth, testUser } = await getTestInstance({
+			database: undefined,
+			session: {
+				cookieCache: {
+					enabled: true,
+					strategy: "jwe",
+					maxAge: 300, // 5 minutes
+					refreshCache: { updateAge: 60 }, // refresh within last 60s
+				},
+			},
+		});
+
+		// Sign in and collect cookies
+		const signInRes = await auth.api.signInEmail({
+			body: { email: testUser.email, password: testUser.password },
+			returnHeaders: true,
+		});
+		const cookies = signInRes.headers.getSetCookie().join("; ");
+
+		// Advance time into the refresh window (within last 60s of the 300s maxAge)
+		vi.useFakeTimers();
+		await vi.advanceTimersByTimeAsync(1000 * 241); // 241s > 300-60
+
+		// Call listSessions which uses sessionMiddleware -> getSessionFromCtx internally.
+		// The refreshed session_data cookie must appear in this response, not be discarded.
+		const listRes = await auth.api.listSessions({
+			headers: new Headers({ cookie: cookies }),
+			returnHeaders: true,
+		});
+
+		vi.useRealTimers();
+
+		// The response must include a refreshed session_data set-cookie header
+		const setCookies = listRes.headers.getSetCookie();
+		const hasSessionDataCookie = setCookies.some((c) =>
+			c.startsWith("better-auth.session_data"),
+		);
+		expect(hasSessionDataCookie).toBe(true);
+	});
+});
