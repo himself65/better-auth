@@ -1148,6 +1148,74 @@ describe("cookie cache refreshCache", async () => {
 	});
 
 	/**
+	 * @see https://github.com/better-auth/better-auth/issues/8770
+	 */
+	it("should preserve real session expiresAt during stateless refreshCache renewal", async () => {
+		const sessionExpiresIn = 60 * 60 * 24 * 7; // 7 days
+		const cookieMaxAge = 60; // 60 seconds
+		const { client, testUser, cookieSetter } = await getTestInstance({
+			database: undefined as any,
+			session: {
+				expiresIn: sessionExpiresIn,
+				cookieCache: {
+					enabled: true,
+					strategy: "jwe",
+					maxAge: cookieMaxAge,
+					refreshCache: {
+						updateAge: 10, // Refresh when 10 seconds remain
+					},
+				},
+			},
+		});
+
+		const headers = new Headers();
+
+		await client.signIn.email(
+			{
+				email: testUser.email,
+				password: testUser.password,
+			},
+			{
+				onSuccess: cookieSetter(headers),
+			},
+		);
+
+		const firstSession = await client.getSession({
+			fetchOptions: {
+				headers,
+				onSuccess: cookieSetter(headers),
+			},
+		});
+		expect(firstSession.data).not.toBeNull();
+		const initialExpiresAt = firstSession.data?.session?.expiresAt;
+		expect(initialExpiresAt).toBeDefined();
+
+		vi.useFakeTimers();
+		// Advance past the refresh threshold (cookieMaxAge - updateAge = 60 - 10 = 50s, so advance 51s)
+		await vi.advanceTimersByTimeAsync(1000 * 51);
+
+		const refreshedSession = await client.getSession({
+			fetchOptions: {
+				headers,
+				onSuccess: cookieSetter(headers),
+			},
+		});
+
+		expect(refreshedSession.data).not.toBeNull();
+		const refreshedExpiresAt = refreshedSession.data?.session?.expiresAt;
+		expect(refreshedExpiresAt).toBeDefined();
+
+		// The real session expiry (7 days) must not be overwritten with cookieCache.maxAge (60s)
+		const nowMs = Date.now();
+		const refreshedExpiresAtMs = new Date(refreshedExpiresAt!).getTime();
+		const minutesUntilExpiry = (refreshedExpiresAtMs - nowMs) / 1000 / 60;
+		// Should be close to 7 days (much more than 1 minute)
+		expect(minutesUntilExpiry).toBeGreaterThan(60); // more than 1 hour remaining
+
+		vi.useRealTimers();
+	});
+
+	/**
 	 * @see https://github.com/better-auth/better-auth/issues/7994
 	 */
 	it("should extend session_token cookie expiry when refreshCache threshold is reached", async () => {
