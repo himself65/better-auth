@@ -33,8 +33,8 @@ export const nextCookies = () => {
 					},
 					handler: createAuthMiddleware(async () => {
 						// Detect Server Component by testing if cookies can be modified.
-						// In Server Components, `cookies().set()` throws an error.
-						// In Server Actions or Route Handlers, it succeeds.
+						// In Server Components, cookie mutations throw an error.
+						// In Server Actions or Route Handlers, they succeed.
 						let cookieStore: Awaited<
 							ReturnType<typeof import("next/headers.js").cookies>
 						>;
@@ -46,9 +46,9 @@ export const nextCookies = () => {
 							return;
 						}
 						try {
-							cookieStore.set("__better-auth-cookie-store", "1", { maxAge: 0 });
-							// If cookie was set successfully, we should clean up.
-							cookieStore.delete("__better-auth-cookie-store");
+							// Test if we can modify cookies by attempting to delete a non-existent cookie.
+							// This avoids creating a cookie that would be sent to the client.
+							cookieStore.delete("__better-auth-test-cookie");
 						} catch {
 							await setShouldSkipSessionRefresh(true);
 						}
