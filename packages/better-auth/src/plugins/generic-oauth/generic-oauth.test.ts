@@ -111,6 +111,30 @@ describe("oauth2", async () => {
 		return { callbackURL, headers: newHeaders, setCookieHeader };
 	}
 
+	/**
+	 * @see https://github.com/better-auth/better-auth/issues/8954
+	 */
+	it("should encode non-ASCII error_description in redirect URL", async () => {
+		// Cyrillic error_description (e.g., from Yandex OAuth)
+		const cyrillicDescription =
+			"Запрещено получать токены с данными правами для данного приложения";
+		const response = await auth.api.oAuth2Callback({
+			query: {
+				error: "unauthorized_client",
+				error_description: cyrillicDescription,
+			},
+			params: { providerId: "test" },
+			asResponse: true,
+		});
+		expect(response.status).toBe(302);
+		const location = response.headers.get("location") || "";
+		// The Location header must be a valid ASCII URL
+		expect(() => new URL(location)).not.toThrow();
+		const url = new URL(location);
+		expect(url.searchParams.get("error")).toBe("unauthorized_client");
+		expect(url.searchParams.get("error_description")).toBe(cyrillicDescription);
+	});
+
 	it("should delete state cookie with path attribute", async () => {
 		const headers = new Headers();
 		const signInRes = await authClient.signIn.oauth2({
